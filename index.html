@@ -784,6 +784,7 @@ function init() {
     showSetup();
   } else {
     hideSetup();
+    loadConversations();
     buildSidebar();
   }
 }
@@ -814,13 +815,14 @@ function resetKey() {
 // ================================================
 function buildSidebar() {
   const sb = document.getElementById('sidebar');
-  sb.innerHTML = AGENTS.map(a => `
-    <button class="agent-btn" id="btn-${a.id}" onclick="${councilMode ? `toggleCouncilAgent('${a.id}')` : `selectAgent('${a.id}')`}">
-      <div class="agent-check">✓</div>
-      <div class="agent-icon">${a.icon}</div>
-      <div class="agent-short">${a.short}</div>
-    </button>
-  `).join('');
+  sb.innerHTML = AGENTS.map(a => {
+    const clickFn = councilMode ? 'toggleCouncilAgent' : 'selectAgent';
+    return '<button class="agent-btn" id="btn-' + a.id + '" onclick="' + clickFn + '(\'' + a.id + '\')">' +
+      '<div class="agent-check">✓</div>' +
+      '<div class="agent-icon">' + a.icon + '</div>' +
+      '<div class="agent-short">' + a.short + '</div>' +
+      '</button>';
+  }).join('');
 }
 
 // ================================================
@@ -855,10 +857,7 @@ function toggleCouncilAgent(id) {
   const idx = councilSelectedAgents.indexOf(id);
   const btn = document.getElementById('btn-' + id);
   if (idx === -1) {
-    if (councilSelectedAgents.length >= 4) {
-      alert('Максимум 4 агента в совете');
-      return;
-    }
+
     councilSelectedAgents.push(id);
     btn.classList.add('council-selected');
   } else {
@@ -882,9 +881,9 @@ function updateCouncilUI() {
   });
 
   const startBtn = document.getElementById('council-start-btn');
-  if (startBtn) startBtn.disabled = councilSelectedAgents.length < 2;
+  if (startBtn) startBtn.disabled = councilSelectedAgents.length < 1;
 
-  if (councilSelectedAgents.length >= 2) {
+  if (councilSelectedAgents.length >= 1) {
     document.getElementById('agent-header').style.display = 'block';
     document.getElementById('agent-name-display').textContent = '⚡ Совет агентов';
     document.getElementById('agent-desc-display').textContent = names;
@@ -917,7 +916,7 @@ function showCouncilWelcome() {
 }
 
 function startCouncilChat() {
-  if (councilSelectedAgents.length < 2) return;
+  if (councilSelectedAgents.length < 1) return;
   updateCouncilUI();
   document.getElementById('msg-input').focus();
 }
@@ -932,8 +931,14 @@ async function sendCouncilMessage(text) {
   msgs.appendChild(userDiv);
   msgs.scrollTop = msgs.scrollHeight;
 
-  // Each selected agent responds
-  for (const agentId of councilSelectedAgents) {
+  if (!conversations['council']) conversations['council'] = [];
+
+  // Collect previous replies in this round for context
+  const roundReplies = [];
+
+  // Each agent responds sequentially, seeing previous agents' replies
+  for (let i = 0; i < councilSelectedAgents.length; i++) {
+    const agentId = councilSelectedAgents[i];
     const agent = AGENTS.find(a => a.id === agentId);
     if (!agent) continue;
 
@@ -945,12 +950,23 @@ async function sendCouncilMessage(text) {
     msgs.scrollTop = msgs.scrollHeight;
 
     try {
+      // Build context with previous agents' replies in this round
+      const prevContext = roundReplies.length > 0
+        ? '\n\nУже высказались коллеги по совету:\n' + roundReplies.map(r => `${r.name}: ${r.reply}`).join('\n\n')
+        : '';
+
+      // Is this the last agent? If so, summarize
+      const isLast = i === councilSelectedAgents.length - 1 && councilSelectedAgents.length > 1;
+      const roleInstruction = isLast
+        ? `\n\nТы последний выступающий. Учти все мнения коллег выше. Подведи итог дискуссии: с чем согласен, где есть противоречия, и дай ФИНАЛЬНУЮ рекомендацию Валентину с конкретным действием.`
+        : `\n\nТы участвуешь в совете. Выскажи своё мнение с точки зрения своей экспертизы (${agent.name}). Если коллеги уже высказались — можешь согласиться, дополнить или поспорить. Будь конкретным.`;
+
+      const councilSystem = agent.system + prevContext + roleInstruction;
+
       const history = (conversations['council'] || [])
         .filter(m => m.role === 'user' || m.role === 'assistant')
-        .slice(-10)
+        .slice(-8)
         .map(m => ({ role: m.role, content: m.content }));
-
-      const councilSystem = agent.system + `\n\nВАЖНО: Ты участвуешь в совете агентов. Отвечай кратко и по существу с точки зрения своей экспертизы (${agent.name}). Другие агенты тоже дадут своё мнение.`;
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -962,7 +978,7 @@ async function sendCouncilMessage(text) {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 1024,
+          max_tokens: 800,
           system: councilSystem,
           messages: [...history, { role: 'user', content: text }]
         })
@@ -973,11 +989,23 @@ async function sendCouncilMessage(text) {
 
       if (!data.error) {
         const reply = data.content?.[0]?.text || '(нет ответа)';
+        roundReplies.push({ name: agent.name, reply: reply });
+
+        // Label: first, middle, or final
+        const label = isLast ? '🏁 ИТОГ СОВЕТА' : (i === 0 ? '💬 ОТКРЫВАЕТ' : '💬 ОТВЕЧАЕТ');
+
         const replyDiv = document.createElement('div');
         replyDiv.className = 'msg council-msg';
-        replyDiv.innerHTML = `<div class="msg-agent-label">${agent.icon} ${agent.name.toUpperCase()}</div>${escHtml(reply)}`;
+        replyDiv.innerHTML = `<div class="msg-agent-label">${agent.icon} ${agent.name.toUpperCase()} — ${label}</div>${escHtml(reply)}<button class="speak-btn" onclick="speakMsg(this)" data-text="${reply.replace(/"/g,'&quot;').substring(0,500)}" title="Озвучить">🔊</button>`;
         msgs.appendChild(replyDiv);
         msgs.scrollTop = msgs.scrollHeight;
+
+        // Speak sequentially - wait for speech to finish before next agent
+        await speakAndWait(reply);
+
+        // Save each reply to council history
+        conversations['council'].push({ role: 'assistant', content: agent.name + ': ' + reply, time: now() });
+        saveConversations();
       }
     } catch (err) {
       typingDiv.remove();
@@ -985,11 +1013,27 @@ async function sendCouncilMessage(text) {
     }
   }
 
-  // Save to council conversation
-  if (!conversations['council']) conversations['council'] = [];
   conversations['council'].push({ role: 'user', content: text, time: now() });
-
+  saveConversations();
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+// Speak text and return promise that resolves when done
+function speakAndWait(text) {
+  return new Promise((resolve) => {
+    if (!autoSpeak || !('speechSynthesis' in window)) {
+      resolve();
+      return;
+    }
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text.substring(0, 300));
+    utterance.lang = 'ru-RU';
+    utterance.rate = 1.0;
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    speechSynthesis.speak(utterance);
+  });
 }
 
 // ================================================
@@ -1126,6 +1170,7 @@ function addMsg(role, content) {
   if (!currentAgent) return;
   if (!conversations[currentAgent.id]) conversations[currentAgent.id] = [];
   conversations[currentAgent.id].push({ role, content, time: now() });
+  saveConversations();
   renderMessages();
   if (role === 'assistant') autoSpeakText(content);
 }
@@ -1168,7 +1213,7 @@ function hideTyping() {
 async function sendMessage() {
   if (isLoading) return;
 
-  if (councilMode && councilSelectedAgents.length >= 2) {
+  if (councilMode && councilSelectedAgents.length >= 1) {
     const input = document.getElementById('msg-input');
     const text = input.value.trim();
     if (!text) return;
@@ -1263,6 +1308,7 @@ function clearChat() {
   if (!currentAgent) return;
   if (confirm('Очистить историю чата с ' + currentAgent.name + '?')) {
     conversations[currentAgent.id] = [];
+    saveConversations();
     renderMessages();
     renderQuickPrompts();
   }
@@ -1456,6 +1502,29 @@ function updateVoice() {
   );
   const useVoices = voices.length > 0 ? voices : speechSynthesis.getVoices().slice(0, 5);
   selectedVoice = useVoices[parseInt(select.value)] || null;
+}
+
+// ================================================
+// STORAGE — сохранение истории
+// ================================================
+function saveConversations() {
+  try {
+    var data = JSON.stringify(conversations);
+    localStorage.setItem('vhub_conversations', data);
+  } catch(e) {
+    console.log('Save error:', e);
+  }
+}
+
+function loadConversations() {
+  try {
+    var data = localStorage.getItem('vhub_conversations');
+    if (data) {
+      conversations = JSON.parse(data);
+    }
+  } catch(e) {
+    conversations = {};
+  }
 }
 
 // START
