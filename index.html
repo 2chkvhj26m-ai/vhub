@@ -1093,8 +1093,7 @@ function renderMessages() {
       const time = m.time ? `<div class="msg-meta">${m.time}</div>` : '';
       const initiativeLabel = m.initiative ? `<div class="msg-meta" style="color:var(--green);margin-bottom:4px">◉ ИНИЦИАТИВА АГЕНТА</div>` : '';
       const speakBtn = m.role === 'assistant' || m.role === 'initiative'
-        ? `<button class="speak-btn" onclick="speakText(this, \`${m.content.replace(/`/g,'').replace(/
-/g,' ')}\`)" title="Озвучить">🔊</button>`
+        ? '<button class="speak-btn" onclick="speakMsg(this)" data-text="' + (m.content||'').replace(/"/g,'&quot;').substring(0,500) + '" title="Озвучить">🔊</button>'
         : '';
       return `<div class="msg ${m.role}${m.initiative ? ' initiative' : ''}">${initiativeLabel}${escHtml(m.content)}${speakBtn}${time}</div>`;
     }).join('');
@@ -1384,6 +1383,11 @@ function stopRecording() {
   if (recognition) {
     try { recognition.stop(); } catch(e) {}
   }
+}
+
+function speakMsg(btn) {
+  var text = btn.getAttribute('data-text') || '';
+  speakText(btn, text);
 }
 
 function speakText(btn, text) {
