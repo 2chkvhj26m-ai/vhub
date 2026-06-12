@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="V·HUB">
+<title>V·HUB — Личный штаб</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a08;
+    --surface: #111110;
+    --surface2: #1a1a18;
+    --border: #2a2a26;
+    --gold: #c9a84c;
+    --gold-dim: #7a6330;
+    --text: #e8e4d8;
+    --text-dim: #6b6860;
+    --text-mid: #a8a49a;
+    --red: #c0392b;
+    --green: #27ae60;
+    --council: #8b5cf6;
+    --council-dim: #4c1d95;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* SETUP SCREEN */
+  #setup-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 32px; padding: 40px;
+  }
+  #setup-screen.hidden { display: none !important; }
+  .setup-logo { font-family: 'Cormorant Garamond', serif; font-size: 56px; font-weight: 300; color: var(--gold); letter-spacing: 8px; }
+  .setup-sub { color: var(--text-dim); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; text-align: center; line-height: 1.8; }
+  .setup-input-wrap { width: 100%; max-width: 420px; }
+  .setup-label { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 8px; }
+  .setup-input { width: 100%; padding: 16px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; border-radius: 2px; outline: none; }
+  .setup-input:focus { border-color: var(--gold-dim); }
+  .setup-btn { width: 100%; max-width: 420px; padding: 18px; background: var(--gold); color: #0a0a08; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; border: none; cursor: pointer; border-radius: 2px; transition: opacity 0.2s; }
+  .setup-btn:hover { opacity: 0.85; }
+  .setup-hint { font-size: 10px; color: var(--text-dim); text-align: center; max-width: 360px; line-height: 1.9; }
+  .setup-hint a { color: var(--gold-dim); }
+
+  /* HEADER */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 56px; min-height: 56px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; gap: 8px; }
+  .logo { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; color: var(--gold); letter-spacing: 4px; }
+  .agent-title { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; text-align: center; flex: 1; margin: 0 12px; }
+
+  /* Council button in header */
+  .council-header-btn {
+    background: none; border: 1px solid var(--council-dim); color: var(--council); font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1px; padding: 5px 9px; cursor: pointer; border-radius: 2px; transition: all 0.2s; white-space: nowrap;
+  }
+  .council-header-btn:hover { border-color: var(--council); background: rgba(139,92,246,0.08); }
+  .council-header-btn.active { background: var(--council); color: #0a0a08; border-color: var(--council); }
+
+  .key-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 6px 10px; cursor: pointer; border-radius: 2px; transition: border-color 0.2s, color 0.2s; }
+  .key-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  /* MAIN LAYOUT */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 72px; min-width: 72px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 8px 0; flex-shrink: 0; }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .agent-btn { width: 100%; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; border: none; background: none; border-left: 2px solid transparent; transition: all 0.15s; padding: 8px 4px; position: relative; }
+  .agent-btn:hover { background: var(--surface2); }
+  .agent-btn.active { background: var(--surface2); border-left-color: var(--gold); }
+  .agent-btn.council-mode { border-left-color: var(--council) !important; background: rgba(139,92,246,0.06); }
+  .agent-icon { font-size: 20px; line-height: 1; }
+  .agent-short { font-size: 7px; color: var(--text-dim); letter-spacing: 0.5px; text-align: center; line-height: 1.2; }
+  .agent-btn.active .agent-short { color: var(--gold); }
+  .agent-btn.council-mode .agent-short { color: var(--council); }
+
+  /* Council checkbox overlay */
+  .agent-check {
+    position: absolute; top: 4px; right: 4px; width: 14px; height: 14px;
+    background: var(--council); border-radius: 50%; display: none;
+    align-items: center; justify-content: center; font-size: 8px; color: #fff;
+  }
+  .agent-btn.council-selected .agent-check { display: flex; }
+  .agent-btn.council-selected { background: rgba(139,92,246,0.1); border-left-color: var(--council); }
+
+  /* CHAT AREA */
+  .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .agent-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .agent-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--text); }
+  .agent-desc { font-size: 10px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.5px; }
+
+  /* Council mode header */
+  .council-header { padding: 12px 20px; border-bottom: 1px solid var(--border); background: rgba(139,92,246,0.05); flex-shrink: 0; display: none; }
+  .council-header.visible { display: block; }
+  .council-header-title { font-size: 11px; color: var(--council); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .council-agents-list { font-size: 10px; color: var(--text-dim); }
+
+  .messages { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .messages::-webkit-scrollbar { width: 3px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .msg { max-width: 85%; padding: 14px 16px; border-radius: 2px; font-size: 13px; line-height: 1.7; }
+  .msg.user { background: var(--surface2); border: 1px solid var(--border); align-self: flex-end; color: var(--text); }
+  .msg.assistant { background: #16160e; border: 1px solid #2a2820; align-self: flex-start; color: var(--text-mid); border-left: 2px solid var(--gold-dim); }
+  .msg.council-msg { background: #120f1a; border: 1px solid #2d1f4a; align-self: flex-start; color: var(--text-mid); border-left: 2px solid var(--council); }
+  .msg.system { background: none; border: none; color: var(--text-dim); font-size: 11px; align-self: center; text-align: center; letter-spacing: 0.5px; padding: 4px 0; }
+  .msg.initiative { background: #0e1410; border: 1px solid #1a2d1e; align-self: flex-start; color: var(--text-mid); border-left: 2px solid var(--green); }
+  .msg.thinking { background: #16160e; border: 1px solid #2a2820; align-self: flex-start; color: var(--text-dim); border-left: 2px solid var(--gold-dim); font-style: italic; font-size: 12px; }
+  .msg-meta { font-size: 9px; color: var(--text-dim); margin-top: 6px; letter-spacing: 0.5px; }
+  .msg-agent-label { font-size: 9px; color: var(--council); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+
+  /* Typing dots */
+  .dots span { display: inline-block; width: 4px; height: 4px; background: var(--gold-dim); border-radius: 50%; margin: 0 2px; animation: dot 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+  /* INPUT AREA */
+  .input-area { padding: 12px 16px 20px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+  .file-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .file-chip { font-size: 10px; color: var(--gold); background: #1a180a; border: 1px solid var(--gold-dim); padding: 3px 10px; border-radius: 20px; display: flex; align-items: center; gap: 6px; }
+  .file-chip button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; }
+
+  /* Council mode selector bar */
+  .council-select-bar { display: none; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .council-select-bar.visible { display: flex; }
+  .council-select-bar span { font-size: 10px; color: var(--council); letter-spacing: 1px; }
+
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  textarea { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 12px 14px; border-radius: 2px; resize: none; min-height: 44px; max-height: 160px; line-height: 1.5; outline: none; transition: border-color 0.2s; }
+  textarea:focus { border-color: var(--gold-dim); }
+  textarea::placeholder { color: var(--text-dim); }
+  .send-btn { width: 44px; height: 44px; flex-shrink: 0; background: var(--gold); border: none; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: opacity 0.2s; }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.3; cursor: default; }
+  .attach-btn { width: 44px; height: 44px; flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: border-color 0.2s, color 0.2s; }
+  .attach-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .input-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .clear-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; letter-spacing: 0.5px; padding: 4px 0; font-family: 'JetBrains Mono', monospace; }
+  .clear-btn:hover { color: var(--red); }
+  .input-hint { font-size: 10px; color: var(--text-dim); text-align: right; }
+
+  /* QUICK PROMPTS */
+  .quick-prompts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .qp { font-size: 10px; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; cursor: pointer; background: none; font-family: 'JetBrains Mono', monospace; transition: all 0.15s; white-space: nowrap; }
+  .qp:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  /* WELCOME */
+  .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px 20px; text-align: center; }
+  .welcome-icon { font-size: 48px; }
+  .welcome-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--text); font-weight: 300; }
+  .welcome-desc { font-size: 11px; color: var(--text-dim); line-height: 1.9; max-width: 340px; }
+  .welcome-prompts { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; }
+  .welcome-prompt { background: var(--surface2); border: 1px solid var(--border); padding: 12px 16px; border-radius: 2px; cursor: pointer; font-size: 12px; color: var(--text-mid); text-align: left; font-family: 'JetBrains Mono', monospace; transition: border-color 0.15s; }
+  .welcome-prompt:hover { border-color: var(--gold-dim); color: var(--text); }
+
+  /* Council welcome */
+  .council-welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 40px 20px; text-align: center; }
+  .council-welcome-icon { font-size: 48px; }
+  .council-welcome-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; color: var(--council); font-weight: 300; letter-spacing: 2px; }
+  .council-welcome-desc { font-size: 11px; color: var(--text-dim); line-height: 1.9; max-width: 380px; }
+  .council-agents-grid { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 360px; }
+  .council-agent-chip { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+  .council-agent-chip span { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .council-agent-chip:hover { border-color: var(--council); }
+  .council-agent-chip.selected { border-color: var(--council); background: rgba(139,92,246,0.1); }
+  .council-agent-chip.selected span { color: var(--council); }
+  .council-start-btn { padding: 14px 32px; background: var(--council); color: #fff; border: none; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; border-radius: 2px; transition: opacity 0.2s; }
+  .council-start-btn:hover { opacity: 0.85; }
+  .council-start-btn:disabled { opacity: 0.3; cursor: default; }
+
+  @media (max-width: 480px) {
+    .sidebar { width: 60px; min-width: 60px; }
+    .agent-icon { font-size: 18px; }
+    .msg { max-width: 92%; font-size: 12px; }
+  }
+
+  /* VOICE */
+  .voice-btn {
+    width: 44px; height: 44px; flex-shrink: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; transition: all 0.2s;
+  }
+  .voice-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .voice-btn.recording {
+    background: rgba(192,57,43,0.15);
+    border-color: var(--red);
+    color: var(--red);
+    animation: pulse-rec 1s infinite;
+  }
+  @keyframes pulse-rec { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .speak-btn {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 14px; padding: 2px 6px;
+    border-radius: 2px; transition: color 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .speak-btn:hover { color: var(--gold); }
+  .speak-btn.speaking { color: var(--gold); animation: pulse-rec 1s infinite; }
+
+  .voice-settings {
+    display: none; gap: 8px; align-items: center;
+    padding: 6px 0; flex-wrap: wrap;
+  }
+  .voice-settings.visible { display: flex; }
+  .voice-settings select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; padding: 4px 8px; border-radius: 2px; outline: none;
+  }
+  .voice-toggle {
+    font-size: 10px; color: var(--text-dim); cursor: pointer;
+    background: none; border: 1px solid var(--border);
+    padding: 3px 8px; border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace; transition: all 0.15s;
+  }
+  .voice-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .voice-toggle.on { border-color: var(--gold); color: var(--gold); }
+
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-logo">V·HUB</div>
+  <div class="setup-sub">Личный штаб Валентина<br>15 агентов · Все бизнесы</div>
+  <div class="setup-input-wrap">
+    <div class="setup-label">ANTHROPIC API KEY</div>
+    <input class="setup-input" type="text" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')saveKey()">
+  </div>
+  <button class="setup-btn" id="login-btn" onclick="saveKey()">ВОЙТИ В СИСТЕМУ →</button>
+  <div class="setup-hint">
+    Ключ хранится только на твоём устройстве.<br>
+    Получить ключ: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">V·HUB</div>
+  <div class="agent-title" id="header-title">ВЫБЕРИ АГЕНТА</div>
+  <button class="council-header-btn" id="council-toggle-btn" onclick="toggleCouncilMode()" title="Режим Совета — несколько агентов совещаются">⚡ СОВЕТ</button>
+  <button class="key-btn" onclick="resetKey()">⊘ КЛЮЧ</button>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- CHAT -->
+  <div class="chat-area">
+    <div class="agent-header" id="agent-header" style="display:none">
+      <div class="agent-name" id="agent-name-display"></div>
+      <div class="agent-desc" id="agent-desc-display"></div>
+    </div>
+
+    <!-- Council mode info bar -->
+    <div class="council-header" id="council-info-header">
+      <div class="council-header-title">⚡ РЕЖИМ СОВЕТА</div>
+      <div class="council-agents-list" id="council-agents-list">Выбери агентов в боковой панели</div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">◎</div>
+        <div class="welcome-name">Добро пожаловать, Валентин</div>
+        <div class="welcome-desc">Выбери агента слева чтобы начать работу. Каждый агент специализируется на своей области и помнит контекст твоих бизнесов.</div>
+      </div>
+    </div>
+
+    <div class="input-area" id="input-area" style="display:none">
+      <div class="quick-prompts" id="quick-prompts"></div>
+      <div class="file-bar" id="file-bar"></div>
+      <div class="input-row">
+        <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Прикрепить файл">🔗</button>
+        <button class="voice-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Голосовой ввод">🎤</button>
+        <textarea id="msg-input" placeholder="Введи сообщение..." rows="1"
+          oninput="autoResize(this)"
+          onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+      </div>
+      <div class="voice-settings" id="voice-settings">
+        <span style="font-size:10px;color:var(--text-dim)">🔊</span>
+        <select id="voice-select" onchange="updateVoice()"></select>
+        <button class="voice-toggle" id="autospeak-btn" onclick="toggleAutoSpeak()">авто-речь ВЫКЛ</button>
+      </div>
+      <div class="input-bottom">
+        <button class="clear-btn" onclick="clearChat()">× очистить чат</button>
+        <div class="input-hint" id="input-hint">Enter — отправить · Shift+Enter — новая строка</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" style="display:none" accept=".txt,.csv,.xlsx,.pdf,.jpg,.png" onchange="attachFile(event)">
+
+<script>
+// ================================================
+// AGENTS CONFIGURATION
+// ================================================
+const CONTEXT = `
+Ты работаешь с Валентином Шмидтом — предпринимателем из Кропивницкого (Украина), гражданином Германии и Украины.
+
+БИЗНЕСЫ:
+1. СТО «Автомаксимум-Плюс» (автосервис) — недавно потерял ключевого мастера-приёмщика (Коля мобилизован), идёт набор.
+2. Оптовая компания оптики
+3. Оптовая дистрибуция продуктов питания (1С, Telegram-бот с отчётами)
+4. Импорт кофе под брендом AURUM ROASTERS и MAGUS (поставщик — Farid, Arabica Trade, Измир)
+5. Имущество: 5 га, артезианская скважина 180м, нерабочий завод ЖБИ с ж/д веткой, склады
+
+ТЕКУЩИЕ ПРОЕКТЫ: PWA-приложение для СТО, мультиагентная система V·HUB, кофейный бренд MAGUS, аналитика 1С через Telegram.
+
+Отвечай профессионально, кратко, по делу. Язык общения — русский.
+`;
+
+const AGENTS = [
+  {
+    id: 'secretary',
+    icon: '📋',
+    short: 'Секре-\nтарь',
+    name: 'Секретарь',
+    desc: 'Планирование · Напоминания · Расписание · Задачи',
+    color: '#c9a84c',
+    prompts: ['Составь план на сегодня', 'Приоритизируй мои задачи', 'Составь недельный план'],
+    initiative: true,
+    initiativePrompt: 'Начни разговор первым: поздоровайся с Валентином, спроси что у него сегодня в приоритете среди его бизнесов (СТО, опт продуктов, кофейный бренд MAGUS, ЖБИ-площадка). Предложи 2-3 конкретных задачи которые стоит сделать сегодня исходя из его текущих проектов. Будь инициативным и конкретным.',
+    system: `${CONTEXT}
+Ты — личный секретарь и планировщик Валентина. Твои задачи:
+- Составлять планы дня/недели/месяца
+- Помогать приоритизировать задачи по методу Эйзенхауэра
+- Напоминать о важных дедлайнах
+- Структурировать хаос множества бизнесов в чёткий план
+- Предлагать оптимальный порядок действий
+
+Формат ответа: структурированный, с чёткими блоками. Используй ○ для задач, ⚡ для срочных, ✓ для выполненных.`
+  },
+  {
+    id: 'finance',
+    icon: '📊',
+    short: 'Финан-\nсист',
+    name: 'Финансовый аналитик',
+    desc: 'Анализ · Аудит · Экономика бизнесов',
+    color: '#27ae60',
+    prompts: ['Анализ рентабельности СТО', 'Оцени экономику кофейного проекта', 'Что проверить на аудите?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — финансовый аналитик, экономист и аудитор Валентина. Твои задачи:
+- Анализировать финансовые показатели всех бизнесов
+- Находить точки утечки прибыли
+- Строить финансовые модели и прогнозы
+- Проводить аудит и выявлять риски
+- Давать конкретные рекомендации с цифрами
+
+АУДИТОРСКИЙ ЧЕКЛИСТ — проверяй по запросу или при анализе данных:
+
+СТО «Автомаксимум-Плюс»:
+⚠ Наценка на запчасти ниже 30% → возможное хищение или "свой" клиент
+⚠ Запчасти списаны без заказ-наряда
+⚠ Скидки без авторизации владельца
+⚠ Кассовые разрывы по сменам
+⚠ Завышенные закупочные цены у поставщиков запчастей (откат)
+
+ОПТ продукты:
+⚠ Накладные изменены задним числом
+⚠ Возвраты товара — схема вывода
+⚠ Один менеджер + один клиент = аномальные скидки
+⚠ Дебиторка концентрируется у клиентов одного менеджера
+⚠ Фиктивные поставки (деньги ушли, товар не пришёл)
+⚠ Пересортица на складе
+
+ОБА БИЗНЕСА:
+⚠ Сотрудник + поставщик: завышенные цены в обмен на откат
+⚠ Оплата наличными без фискального чека
+⚠ Резкий рост себестоимости без объяснения
+
+Всегда проси конкретные данные если нужно. Отвечай с расчётами, таблицами, конкретными цифрами.`
+  },
+  {
+    id: 'newbiz',
+    icon: '🚀',
+    short: 'Новые\nнапр.',
+    name: 'Аналитик новых направлений',
+    desc: 'Рынки · Возможности · Диверсификация',
+    color: '#8e44ad',
+    prompts: ['Что делать с заводом ЖБИ?', 'Оцени потенциал скважины', 'Новые рынки для имущества'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — аналитик новых бизнес-направлений. Профиль активов Валентина:
+- 5 га земли, завод ЖБИ (нерабочий), ж/д ветка, склады
+- Артезианская скважина 180м
+- Связи в Германии (двойное гражданство)
+- Опыт в авто, оптике, продуктах, кофе
+
+Твои задачи:
+- Оценивать новые бизнес-идеи (рынок, конкуренция, маржа, риски)
+- Искать применение имеющимся активам
+- Анализировать тренды (Украина + ЕС)
+- Давать оценку 1-10 по потенциалу
+
+Будь честным: если идея слабая — говори прямо.`
+  },
+  {
+    id: 'fitness',
+    icon: '💪',
+    short: 'Фитнес\nтренер',
+    name: 'Фитнес-тренер & Диетолог',
+    desc: 'Тренировки · Питание · Здоровье',
+    color: '#e74c3c',
+    prompts: ['Составь план тренировок', 'Рацион для энергии', 'Как восстановиться при стрессе?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — персональный фитнес-тренер и диетолог Валентина. У него напряжённый график предпринимателя, множество стрессов.
+
+Твои задачи:
+- Составлять реалистичные планы тренировок (с учётом занятости)
+- Разрабатывать рационы питания
+- Давать советы по восстановлению и энергии
+- Помогать поддерживать высокий уровень продуктивности через здоровье
+
+Сначала спроси: возраст, вес, цель, сколько времени в неделю на спорт, есть ли ограничения по здоровью.`
+  },
+  {
+    id: 'german',
+    icon: '🇩🇪',
+    short: 'Немец-\nкий',
+    name: 'Преподаватель немецкого',
+    desc: 'B1 → C1 · Бизнес-немецкий · Практика',
+    color: '#f39c12',
+    prompts: ['Урок: деловые переговоры', 'Проверь мой текст на немецком', 'Объясни Konjunktiv II'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — преподаватель немецкого языка. Валентин сейчас на уровне B1, цель — C1. У него немецкое гражданство, бизнес-контакты в Германии (импорт кофе, возможно GmbH).
+
+Фокус обучения:
+- Деловой немецкий (переписка, переговоры, документы)
+- Грамматика уровня B2-C1 (Konjunktiv, сложные конструкции)
+- Словарный запас бизнес и юридической сферы
+- Разговорная практика
+
+Формат: объясняй правила просто, давай примеры, исправляй ошибки с объяснением. Чередуй упражнения.`
+  },
+  {
+    id: 'auto',
+    icon: '🔧',
+    short: 'Совет-\nник СТО',
+    name: 'Советник по СТО',
+    desc: 'Тренды · Выручка · Технологии автосервиса',
+    color: '#3498db',
+    prompts: ['Тренды в автосервисе 2025', 'Как увеличить средний чек?', 'Что предложить клиентам сейчас?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — бизнес-советник по автосервису. СТО «Автомаксимум-Плюс» в Кропивницком, Украина. Сейчас проблема: ушёл ключевой мастер-приёмщик Коля (мобилизован), идёт разработка PWA для автоматизации приёма.
+
+Твои задачи:
+- Отслеживать тренды рынка автосервисов (Украина + мировой)
+- Давать конкретные советы по увеличению выручки и среднего чека
+- Анализировать новые услуги и технологии
+- Помогать с маркетингом и удержанием клиентов
+- Советовать по автоматизации процессов
+
+АЛЕРТЫ — АВТОМАТИЧЕСКИ СИГНАЛИЗИРУЙ если видишь в данных:
+⚠ Наценка на запчасть ниже 30% — нетипично, указать мастера и запчасть
+⚠ Запчасть списана без привязки к заказ-наряду — прямое хищение
+⚠ Один мастер стабильно даёт скидки одним и тем же клиентам
+⚠ Кассовый разрыв в конце смены — неоприходованная наличка
+⚠ Нормо-часы по документу не совпадают с фактическим временем ремонта
+⚠ Дорогая запчасть списана на дешёвый вид ремонта
+
+Давай конкретные, применимые рекомендации с цифрами.`
+  },
+  {
+    id: 'food',
+    icon: '🛒',
+    short: 'Совет-\nник опт.',
+    name: 'Советник: оптовые продукты',
+    desc: 'Тренды · Новинки · Дистрибуция',
+    color: '#1abc9c',
+    prompts: ['Тренды в продуктах питания 2025', 'Новые категории для портфеля', 'Как найти новых клиентов?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — советник по оптовой торговле продуктами питания. Валентин работает в дистрибуции продуктов, использует 1С, строит аналитику через Telegram-бот.
+
+Твои задачи:
+- Отслеживать тренды FMCG-рынка Украины
+- Рекомендовать новые категории и продукты для портфеля
+- Советовать по работе с клиентами (удержание, расширение)
+- Помогать с ценовой стратегией
+- Анализировать сезонность и спрос
+
+Фокус: практические решения для украинского рынка в условиях войны.`
+  },
+  {
+    id: 'marketing',
+    icon: '📣',
+    short: 'Марке-\nтолог',
+    name: 'Маркетолог',
+    desc: 'Продвижение · Бренд · Продажи всех бизнесов',
+    color: '#e91e8c',
+    prompts: ['Стратегия для MAGUS / AURUM ROASTERS', 'Как продвигать СТО в Кропивницком?', 'Контент-план для соцсетей'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — маркетолог для всех бизнесов Валентина. Портфель:
+- СТО «Автомаксимум-Плюс» (локальный рынок)
+- AURUM ROASTERS / MAGUS (кофейный бренд, импорт из Турции)
+- Оптовые продукты (B2B)
+- Оптика (оптовая)
+
+Твои задачи:
+- Разрабатывать маркетинговые стратегии
+- Писать контент для соцсетей, OLX, сайтов
+- Помогать с позиционированием и брендингом
+- Давать советы по digital-маркетингу
+- Анализировать конкурентов
+
+Учитывай: Украина, военное время, ограниченный бюджет — нужен максимум отдачи.`
+  },
+  {
+    id: 'supervisor',
+    icon: '👁',
+    short: 'Супер-\nвайзер',
+    name: 'Супервайзер опта',
+    desc: 'Контроль команды · Дебиторка · KPI · Маршруты',
+    color: '#ff6b35',
+    prompts: ['Проверь KPI менеджеров', 'Анализ дебиторской задолженности', 'Кто из клиентов давно не заказывал?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — супервайзер оптового отдела продуктов питания. Задачи:
+- Контроль работы менеджеров и торговых агентов (выполнение плана, активность, маршруты)
+- Мониторинг дебиторской задолженности (кто задерживает оплату, суммы, сроки)
+- Анализ клиентской базы: спящие клиенты, падение заказов, новые возможности
+- KPI: выручка на менеджера, средний чек, количество визитов, конверсия
+- Контроль остатков и заявок
+- Выявление аномалий в ценах и скидках
+
+АЛЕРТЫ — АВТОМАТИЧЕСКИ СИГНАЛИЗИРУЙ если видишь в данных:
+⚠ Накладная изменена задним числом (дата проводки позже даты документа >1 дня) — сообщи: кто, когда, на какую сумму изменил
+⚠ Скидка клиенту выше нормы без причины — указать менеджера
+⚠ Возврат товара от клиента на сумму >500 грн без объяснения
+⚠ Один менеджер + один клиент = стабильно максимальные скидки
+⚠ Дебиторка растёт у клиентов одного менеджера
+⚠ Пересортица на складе
+⚠ Оплата наличными без фискального чека
+
+Формат ответа: конкретные цифры, имена менеджеров/клиентов если известны, чёткие действия. Если данных нет — спроси что загрузить из 1С.`
+  },
+  {
+    id: 'programmer',
+    icon: '💻',
+    short: 'Програ-\nммист',
+    name: 'Программист',
+    desc: 'Код · Автоматизация · Внедрение идей',
+    color: '#607d8b',
+    prompts: ['Помоги с PWA для СТО', 'Напиши скрипт для 1С выгрузки', 'Как настроить Telegram-бот?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — персональный программист Валентина. Текущие проекты:
+- PWA для СТО (GitHub Pages, iPad) — приём клиентов, наряд-заказы, AI-сканирование
+- Telegram-бот + Python + Claude API для аналитики 1С
+- Эта мультиагентная система (V·HUB)
+
+Стек который используется: HTML/CSS/JS, Python, GitHub Pages, Telegram Bot API, Claude API, 1С.
+
+Твои задачи:
+- Писать рабочий код (не псевдокод)
+- Объяснять технические решения просто
+- Помогать с деплоем и настройкой
+- Предлагать архитектурные решения
+- Дебажить проблемы
+
+Всегда давай полный рабочий код который можно скопировать и запустить.`
+  },
+  {
+    id: 'coo',
+    icon: '⚙️',
+    short: 'COO',
+    name: 'Операционный директор',
+    desc: 'Процессы · Контроль · Узкие места · Сводка',
+    color: '#546e7a',
+    prompts: ['Оперативная сводка по всем бизнесам', 'Где узкое место сегодня?', 'Что работает без меня?'],
+    initiative: true,
+    initiativePrompt: 'Ты — операционный директор Валентина. Дай утренний брифинг: статус каждого из 5 бизнесов (🟢норма/🟡внимание/🔴проблема), главный вопрос дня, конкретное действие. В конце — ТОП-3 задачи для Валентина лично. Будь директивным как настоящий COO.',
+    system: `${CONTEXT}
+Ты — операционный директор (COO) с опытом управления крупными корпорациями.
+
+ЕЖЕДНЕВНЫЙ БРИФИНГ:
+⚙️ ОПЕРАТИВНАЯ СВОДКА
+━━━━━━━━━━━━━━━━━━
+🔧 СТО «Автомаксимум-Плюс»: [статус] [вопрос] [действие]
+🛒 Опт «Торнадо»: [статус] [вопрос] [действие]
+☕ MAGUS/AURUM: [статус] [вопрос] [действие]
+🏭 ЖБИ-площадка: [статус] [вопрос] [действие]
+💧 Имущество/Скважина: [статус] [вопрос] [действие]
+━━━━━━━━━━━━━━━━━━
+🎯 ТОП-3 задачи Валентина сегодня:
+
+Главный вопрос: "Что будет если Валентин уедет на месяц?" — если бизнес остановится, это операционный риск. Находи узкие места и исправляй.`
+  },
+  {
+    id: 'strategy',
+    icon: '♟️',
+    short: 'Стратег',
+    name: 'Стратег & Совет директоров',
+    desc: 'Стратегия · Рост · Жёсткие вопросы · 3 года',
+    color: '#4a148c',
+    prompts: ['Стратегический обзор бизнесов', 'Что мне нужно остановить?', 'Куда двигаться через 3 года?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — стратегический советник и председатель совета директоров с опытом в Европе и СНГ.
+
+ИНСТРУМЕНТЫ: SWOT, BCG матрица, сценарное планирование (пессимист/база/оптимист).
+
+ЖЁСТКИЕ ВОПРОСЫ совета директоров:
+- Какой бизнес забирает 80% времени и даёт 20% прибыли?
+- Какое решение откладываешь уже 3 месяца — и почему?
+- Если бы начинал сегодня — что бы не стал делать?
+- Какой актив недооценён и не используется?
+- Где реальная конкурентная позиция через 2 года?
+
+ГОРИЗОНТЫ: 📍90 дней — тактика | 📅1 год — цели | 🔭3 года — позиция Украина+ЕС
+
+Говори правду даже если неудобно. Лучший советник не льстит.`
+  },
+  {
+    id: 'risk',
+    icon: '🛡️',
+    short: 'Риски',
+    name: 'Риск-менеджер',
+    desc: 'Угрозы · Защита · Plan B · Концентрация рисков',
+    color: '#b71c1c',
+    prompts: ['Карта рисков всех бизнесов', 'Риск зависимости от одного поставщика', 'Что будет если...?'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — директор по управлению рисками (CRO). Специализация: МСБ в нестабильных рынках.
+
+КАРТА РИСКОВ — матрица Вероятность × Последствия:
+
+🔴 КРИТИЧЕСКИЕ (действовать немедленно):
+- Единственный поставщик кофе Farid/Arabica Trade — нет альтернативы
+- Потеря людей через мобилизацию
+- Концентрация выручки в одном бизнесе
+- Курсовой риск (гривна/евро/доллар)
+
+🟡 ОПЕРАЦИОННЫЕ:
+- Война: свет, интернет, логистика
+- Дебиторская задолженность
+- Юридические риски по имуществу ЖБИ
+- Полная зависимость бизнесов от владельца
+
+ДЛЯ КАЖДОГО РИСКА:
+1. Вероятность (1-10) и Последствия (1-10)
+2. Текущая защита
+3. План митигации
+4. Plan B — резервный сценарий`
+  },
+  {
+    id: 'cx',
+    icon: '⭐',
+    short: 'CX',
+    name: 'Клиентский опыт (CX)',
+    desc: 'Лояльность · Удержание · NPS · Отзывы',
+    color: '#f57f17',
+    prompts: ['Как удержать клиентов СТО?', 'Программа лояльности для MAGUS', 'Работа с отзывами'],
+    initiative: false,
+    system: `${CONTEXT}
+Ты — директор по клиентскому опыту (CXO). Повторный клиент СТО стоит в 5 раз дешевле нового.
+
+СТО «Автомаксимум-Плюс»:
+- История каждого авто → напоминание о ТО
+- SMS/Telegram после ремонта: "Как ваша машина?"
+- Программа: 10-й ремонт со скидкой
+- Работа с отзывами Google Maps, OLX
+- NPS: "Порекомендуете нас другу?"
+
+MAGUS/AURUM ROASTERS:
+- Подписка на кофе — ежемесячная доставка
+- Клуб ценителей — эксклюзивный контент
+- "Пригласи друга" — реферальная программа
+- Storytelling: от зерна до чашки
+
+ОПТ «Торнадо» B2B:
+- Check-in с топ-20 клиентами каждые 2 недели
+- Падение заказов >20% = немедленный звонок
+
+МЕТРИКИ: NPS, Churn Rate, LTV, % повторных покупок.
+Давай конкретные скрипты и шаблоны сообщений.`
+  },
+  {
+    id: 'personal',
+    icon: '🧭',
+    short: 'Советник',
+    name: 'Личный советник',
+    desc: 'Баланс · Решения · Энергия · Семья · Рост',
+    color: '#1a237e',
+    prompts: ['Как не выгореть?', 'Помоги принять сложное решение', 'Баланс работа-семья'],
+    initiative: true,
+    initiativePrompt: 'Ты — личный советник и близкий друг Валентина. Начни тепло — спроси как он себя чувствует сегодня не как предприниматель а как человек. Задай один вопрос: что сейчас отнимает больше всего энергии — бизнес, семья или что-то личное? Создай атмосферу доверия.',
+    system: `${CONTEXT}
+Ты — личный советник, наставник и близкий друг Валентина. Искренне переживаешь за него.
+
+КАК СОВЕТНИК:
+- Помогать принимать решения с холодной головой
+- Задавать правильные вопросы а не давать готовые ответы
+- Видеть слепые пятна которые сам не замечаешь
+
+КАК НАСТАВНИК:
+- Предотвращать выгорание — замечать ранние признаки
+- Напоминать о долгосрочных целях когда затягивает операционка
+- Строить привычки которые дают энергию и ясность ума
+
+КАК ДРУГ:
+- Быть рядом когда тяжело
+- Говорить правду даже когда неудобно
+- Спрашивать о семье, о здоровье, о том что внутри
+- Радоваться победам вместе
+
+САМЫЙ ЦЕННЫЙ АКТИВ Валентина — это он сам. Говори тепло, по-человечески. Иногда просто выслушай.`
+  }
+
+];
+
+// ================================================
+// STATE
+// ================================================
+let currentAgent = null;
+let conversations = {};
+let attachedFiles = [];
+let isLoading = false;
+let apiKey = '';
+let councilMode = false;
+let councilSelectedAgents = [];
+
+// ================================================
+// INIT
+// ================================================
+function getStoredKey() {
+  try { return localStorage.getItem('vhub_api_key') || ''; } catch(e) {}
+  try {
+    var m = document.cookie.match(/vhub_key=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  } catch(e) {}
+  return '';
+}
+
+function storeKey(val) {
+  try { localStorage.setItem('vhub_api_key', val); } catch(e) {}
+  try { document.cookie = 'vhub_key=' + encodeURIComponent(val) + ';path=/;max-age=31536000'; } catch(e) {}
+}
+
+function showSetup() {
+  var s = document.getElementById('setup-screen');
+  s.classList.remove('hidden');
+  s.style.display = 'flex';
+}
+
+function hideSetup() {
+  var s = document.getElementById('setup-screen');
+  s.classList.add('hidden');
+  s.style.display = 'none';
+}
+
+function init() {
+  apiKey = getStoredKey();
+  if (!apiKey) {
+    showSetup();
+  } else {
+    hideSetup();
+    buildSidebar();
+  }
+}
+
+function saveKey() {
+  var input = document.getElementById('api-key-input');
+  var val = input.value.replace(/\s/g, '');
+  if (!val || val.length < 5) {
+    alert('Введи API ключ');
+    return;
+  }
+  apiKey = val;
+  storeKey(val);
+  hideSetup();
+  buildSidebar();
+}
+
+function resetKey() {
+  if (confirm('Сменить API КЛЮЧ?')) {
+    try { localStorage.removeItem('vhub_api_key'); } catch(e) {}
+    try { document.cookie = 'vhub_key=;path=/;max-age=0'; } catch(e) {}
+    location.reload();
+  }
+}
+
+// ================================================
+// SIDEBAR
+// ================================================
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = AGENTS.map(a => `
+    <button class="agent-btn" id="btn-${a.id}" onclick="${councilMode ? `toggleCouncilAgent('${a.id}')` : `selectAgent('${a.id}')`}">
+      <div class="agent-check">✓</div>
+      <div class="agent-icon">${a.icon}</div>
+      <div class="agent-short">${a.short}</div>
+    </button>
+  `).join('');
+}
+
+// ================================================
+// COUNCIL MODE
+// ================================================
+function toggleCouncilMode() {
+  councilMode = !councilMode;
+  councilSelectedAgents = [];
+  const btn = document.getElementById('council-toggle-btn');
+  const infoHeader = document.getElementById('council-info-header');
+
+  if (councilMode) {
+    btn.classList.add('active');
+    btn.textContent = '⚡ СОВЕТ ВКЛ';
+    infoHeader.classList.add('visible');
+    document.getElementById('header-title').textContent = 'РЕЖИМ СОВЕТА';
+    currentAgent = null;
+    document.getElementById('agent-header').style.display = 'none';
+    document.getElementById('input-area').style.display = 'none';
+    showCouncilWelcome();
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '⚡ СОВЕТ';
+    infoHeader.classList.remove('visible');
+    document.getElementById('header-title').textContent = 'ВЫБЕРИ АГЕНТА';
+    showWelcome();
+  }
+  buildSidebar();
+}
+
+function toggleCouncilAgent(id) {
+  const idx = councilSelectedAgents.indexOf(id);
+  const btn = document.getElementById('btn-' + id);
+  if (idx === -1) {
+    if (councilSelectedAgents.length >= 4) {
+      alert('Максимум 4 агента в совете');
+      return;
+    }
+    councilSelectedAgents.push(id);
+    btn.classList.add('council-selected');
+  } else {
+    councilSelectedAgents.splice(idx, 1);
+    btn.classList.remove('council-selected');
+  }
+  updateCouncilUI();
+}
+
+function updateCouncilUI() {
+  const names = councilSelectedAgents.map(id => {
+    const a = AGENTS.find(x => x.id === id);
+    return a ? a.icon + ' ' + a.name : '';
+  }).join(' · ');
+  document.getElementById('council-agents-list').textContent = names || 'Выбери агентов в боковой панели';
+
+  // Update council welcome chips
+  document.querySelectorAll('.council-agent-chip').forEach(chip => {
+    const id = chip.dataset.id;
+    chip.classList.toggle('selected', councilSelectedAgents.includes(id));
+  });
+
+  const startBtn = document.getElementById('council-start-btn');
+  if (startBtn) startBtn.disabled = councilSelectedAgents.length < 2;
+
+  if (councilSelectedAgents.length >= 2) {
+    document.getElementById('agent-header').style.display = 'block';
+    document.getElementById('agent-name-display').textContent = '⚡ Совет агентов';
+    document.getElementById('agent-desc-display').textContent = names;
+    document.getElementById('input-area').style.display = 'flex';
+    const msgs = document.getElementById('messages');
+    if (msgs.querySelector('.council-welcome')) {
+      msgs.innerHTML = '';
+    }
+  }
+}
+
+function showCouncilWelcome() {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = `
+    <div class="council-welcome">
+      <div class="council-welcome-icon">⚡</div>
+      <div class="council-welcome-title">РЕЖИМ СОВЕТА</div>
+      <div class="council-welcome-desc">Выбери 2-4 агента которые будут совещаться и давать общий ответ. Каждый агент высказывает своё мнение со своей экспертизы.</div>
+      <div class="council-agents-grid">
+        ${AGENTS.map(a => `
+          <div class="council-agent-chip" data-id="${a.id}" onclick="toggleCouncilAgent('${a.id}')">
+            <span>${a.icon}</span>
+            <span>${a.name}</span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="council-start-btn" id="council-start-btn" disabled onclick="startCouncilChat()">НАЧАТЬ СОВЕТ →</button>
+    </div>
+  `;
+}
+
+function startCouncilChat() {
+  if (councilSelectedAgents.length < 2) return;
+  updateCouncilUI();
+  document.getElementById('msg-input').focus();
+}
+
+async function sendCouncilMessage(text) {
+  const msgs = document.getElementById('messages');
+
+  // Show user message
+  const userDiv = document.createElement('div');
+  userDiv.className = 'msg user';
+  userDiv.textContent = text;
+  msgs.appendChild(userDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Each selected agent responds
+  for (const agentId of councilSelectedAgents) {
+    const agent = AGENTS.find(a => a.id === agentId);
+    if (!agent) continue;
+
+    // Show typing
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'msg thinking';
+    typingDiv.innerHTML = `${agent.icon} <b>${agent.name}</b> думает <span class="dots"><span></span><span></span><span></span></span>`;
+    msgs.appendChild(typingDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    try {
+      const history = (conversations['council'] || [])
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const councilSystem = agent.system + `\n\nВАЖНО: Ты участвуешь в совете агентов. Отвечай кратко и по существу с точки зрения своей экспертизы (${agent.name}). Другие агенты тоже дадут своё мнение.`;
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 1024,
+          system: councilSystem,
+          messages: [...history, { role: 'user', content: text }]
+        })
+      });
+
+      const data = await response.json();
+      typingDiv.remove();
+
+      if (!data.error) {
+        const reply = data.content?.[0]?.text || '(нет ответа)';
+        const replyDiv = document.createElement('div');
+        replyDiv.className = 'msg council-msg';
+        replyDiv.innerHTML = `<div class="msg-agent-label">${agent.icon} ${agent.name.toUpperCase()}</div>${escHtml(reply)}`;
+        msgs.appendChild(replyDiv);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+    } catch (err) {
+      typingDiv.remove();
+      addSystemMsg('⚠ Ошибка ' + agent.name + ': ' + err.message);
+    }
+  }
+
+  // Save to council conversation
+  if (!conversations['council']) conversations['council'] = [];
+  conversations['council'].push({ role: 'user', content: text, time: now() });
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ================================================
+// AGENT SELECTION
+// ================================================
+function selectAgent(id) {
+  if (councilMode) { toggleCouncilAgent(id); return; }
+  currentAgent = AGENTS.find(a => a.id === id);
+  if (!currentAgent) return;
+
+  document.querySelectorAll('.agent-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + id).classList.add('active');
+
+  document.getElementById('header-title').textContent = currentAgent.name.toUpperCase();
+  document.getElementById('agent-header').style.display = 'block';
+  document.getElementById('agent-name-display').textContent = currentAgent.icon + '  ' + currentAgent.name;
+  document.getElementById('agent-desc-display').textContent = currentAgent.desc;
+  document.getElementById('input-area').style.display = 'flex';
+
+  renderQuickPrompts();
+  renderMessages();
+
+  // Auto-initiative for secretary on first open
+  if (currentAgent.initiative && !conversations[currentAgent.id]?.length) {
+    setTimeout(() => agentInitiative(), 600);
+  }
+}
+
+async function agentInitiative() {
+  if (!currentAgent || !currentAgent.initiative) return;
+  showTyping();
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1024,
+        system: currentAgent.system,
+        messages: [{ role: 'user', content: currentAgent.initiativePrompt }]
+      })
+    });
+    const data = await response.json();
+    hideTyping();
+    if (!data.error) {
+      const reply = data.content?.[0]?.text || '';
+      if (!conversations[currentAgent.id]) conversations[currentAgent.id] = [];
+      conversations[currentAgent.id].push({ role: 'assistant', content: reply, time: now(), initiative: true });
+      renderMessages();
+    }
+  } catch (e) {
+    hideTyping();
+  }
+}
+
+// ================================================
+// QUICK PROMPTS
+// ================================================
+function renderQuickPrompts() {
+  if (!currentAgent) return;
+  const container = document.getElementById('quick-prompts');
+  if (conversations[currentAgent.id]?.length > 0) { container.innerHTML = ''; return; }
+  container.innerHTML = currentAgent.prompts.map(p =>
+    `<button class="qp" onclick="usePrompt('${p.replace(/'/g, "\\'")}')">${p}</button>`
+  ).join('');
+}
+
+function usePrompt(text) {
+  document.getElementById('msg-input').value = text;
+  sendMessage();
+}
+
+// ================================================
+// MESSAGES
+// ================================================
+function renderMessages() {
+  const container = document.getElementById('messages');
+  if (!currentAgent) return;
+
+  const msgs = conversations[currentAgent.id] || [];
+  if (msgs.length === 0) {
+    container.innerHTML = `
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">${currentAgent.icon}</div>
+        <div class="welcome-name">${currentAgent.name}</div>
+        <div class="welcome-desc">${currentAgent.desc}</div>
+        <div class="welcome-prompts">
+          ${currentAgent.prompts.map(p => `
+            <button class="welcome-prompt" onclick="usePrompt('${p.replace(/'/g, "\\'")}')">${p} →</button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } else {
+    container.innerHTML = msgs.map(m => {
+      const time = m.time ? `<div class="msg-meta">${m.time}</div>` : '';
+      const initiativeLabel = m.initiative ? `<div class="msg-meta" style="color:var(--green);margin-bottom:4px">◉ ИНИЦИАТИВА АГЕНТА</div>` : '';
+      const speakBtn = m.role === 'assistant' || m.role === 'initiative'
+        ? `<button class="speak-btn" onclick="speakText(this, \`${m.content.replace(/`/g,'').replace(/
+/g,' ')}\`)" title="Озвучить">🔊</button>`
+        : '';
+      return `<div class="msg ${m.role}${m.initiative ? ' initiative' : ''}">${initiativeLabel}${escHtml(m.content)}${speakBtn}${time}</div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function showWelcome() {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = `
+    <div class="welcome" id="welcome-screen">
+      <div class="welcome-icon">◎</div>
+      <div class="welcome-name">Добро пожаловать, Валентин</div>
+      <div class="welcome-desc">Выбери агента слева чтобы начать работу. Каждый агент специализируется на своей области и помнит контекст твоих бизнесов.</div>
+    </div>
+  `;
+  document.getElementById('agent-header').style.display = 'none';
+  document.getElementById('input-area').style.display = 'none';
+}
+
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+function addMsg(role, content) {
+  if (!currentAgent) return;
+  if (!conversations[currentAgent.id]) conversations[currentAgent.id] = [];
+  conversations[currentAgent.id].push({ role, content, time: now() });
+  renderMessages();
+  if (role === 'assistant') autoSpeakText(content);
+}
+
+function addSystemMsg(text) {
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg system';
+  div.textContent = text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function now() {
+  return new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ================================================
+// TYPING INDICATOR
+// ================================================
+function showTyping() {
+  const container = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg thinking';
+  el.id = 'typing-indicator';
+  const agentIcon = currentAgent ? currentAgent.icon : '◎';
+  el.innerHTML = `${agentIcon} думает <span class="dots"><span></span><span></span><span></span></span>`;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+// ================================================
+// SEND MESSAGE
+// ================================================
+async function sendMessage() {
+  if (isLoading) return;
+
+  if (councilMode && councilSelectedAgents.length >= 2) {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.style.height = 'auto';
+    isLoading = true;
+    document.getElementById('send-btn').disabled = true;
+    await sendCouncilMessage(text);
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    return;
+  }
+
+  if (!currentAgent) return;
+
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text && attachedFiles.length === 0) return;
+
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  let userContent = text;
+  if (attachedFiles.length > 0) {
+    userContent += '\n\n[Прикреплённые файлы: ' + attachedFiles.map(f => f.name).join(', ') + ']';
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  attachedFiles = [];
+  renderFileBar();
+
+  addMsg('user', userContent);
+  showTyping();
+
+  try {
+    const history = (conversations[currentAgent.id] || [])
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .slice(-20)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2048,
+        system: currentAgent.system,
+        messages: history
+      })
+    });
+
+    const data = await response.json();
+    hideTyping();
+
+    if (data.error) {
+      addMsg('system', '⚠ Ошибка: ' + data.error.message);
+    } else {
+      const reply = data.content?.[0]?.text || '(нет ответа)';
+      addMsg('assistant', reply);
+    }
+  } catch (err) {
+    hideTyping();
+    addMsg('system', '⚠ Ошибка соединения: ' + err.message);
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+// ================================================
+// UTILS
+// ================================================
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function clearChat() {
+  if (!currentAgent) return;
+  if (confirm('Очистить историю чата с ' + currentAgent.name + '?')) {
+    conversations[currentAgent.id] = [];
+    renderMessages();
+    renderQuickPrompts();
+  }
+}
+
+function attachFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  attachedFiles.push(file);
+  renderFileBar();
+  e.target.value = '';
+}
+
+function renderFileBar() {
+  const bar = document.getElementById('file-bar');
+  bar.innerHTML = attachedFiles.map((f, i) => `
+    <div class="file-chip">
+      🔗 ${f.name}
+      <button onclick="removeFile(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removeFile(i) {
+  attachedFiles.splice(i, 1);
+  renderFileBar();
+}
+
+
+// ================================================
+// VOICE — INPUT & OUTPUT
+// ================================================
+let recognition = null;
+let isRecording = false;
+let currentUtterance = null;
+let autoSpeak = false;
+let selectedVoice = null;
+
+function initVoice() {
+  // Text-to-Speech voices
+  if ('speechSynthesis' in window) {
+    const loadVoices = () => {
+      const voices = speechSynthesis.getVoices().filter(v =>
+        v.lang.startsWith('ru') || v.lang.startsWith('uk')
+      );
+      const select = document.getElementById('voice-select');
+      if (!select) return;
+      select.innerHTML = '';
+      const allVoices = speechSynthesis.getVoices();
+      const ruVoices = allVoices.filter(v => v.lang.startsWith('ru') || v.lang.startsWith('uk'));
+      const useVoices = ruVoices.length > 0 ? ruVoices : allVoices.slice(0, 5);
+      useVoices.forEach((v, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = v.name.substring(0, 20);
+        select.appendChild(opt);
+      });
+      if (useVoices.length > 0) selectedVoice = useVoices[0];
+    };
+    speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+    // Show voice settings
+    document.getElementById('voice-settings').classList.add('visible');
+  }
+
+  // Speech Recognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('voice-btn').style.display = 'none';
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'ru-RU';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results)
+      .map(r => r[0].transcript).join('');
+    document.getElementById('msg-input').value = transcript;
+    autoResize(document.getElementById('msg-input'));
+    if (e.results[e.results.length - 1].isFinal) {
+      stopRecording();
+      setTimeout(() => sendMessage(), 300);
+    }
+  };
+
+  recognition.onerror = () => stopRecording();
+  recognition.onend = () => stopRecording();
+}
+
+function toggleVoiceInput() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  if (!recognition) return;
+  isRecording = true;
+  const btn = document.getElementById('voice-btn');
+  btn.classList.add('recording');
+  btn.textContent = '⏹';
+  btn.title = 'Остановить запись';
+  document.getElementById('msg-input').placeholder = '🎤 Говори...';
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  const btn = document.getElementById('voice-btn');
+  btn.classList.remove('recording');
+  btn.textContent = '🎤';
+  btn.title = 'Голосовой ввод';
+  document.getElementById('msg-input').placeholder = 'Введи сообщение...';
+  if (recognition) {
+    try { recognition.stop(); } catch(e) {}
+  }
+}
+
+function speakText(btn, text) {
+  if (!('speechSynthesis' in window)) return;
+
+  // If already speaking this — stop
+  if (currentUtterance && btn.classList.contains('speaking')) {
+    speechSynthesis.cancel();
+    btn.classList.remove('speaking');
+    btn.textContent = '🔊';
+    currentUtterance = null;
+    return;
+  }
+
+  // Stop any current speech
+  speechSynthesis.cancel();
+  document.querySelectorAll('.speak-btn.speaking').forEach(b => {
+    b.classList.remove('speaking');
+    b.textContent = '🔊';
+  });
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ru-RU';
+  utterance.rate = 0.95;
+  if (selectedVoice) utterance.voice = selectedVoice;
+
+  btn.classList.add('speaking');
+  btn.textContent = '⏹';
+
+  utterance.onend = () => {
+    btn.classList.remove('speaking');
+    btn.textContent = '🔊';
+    currentUtterance = null;
+  };
+  utterance.onerror = () => {
+    btn.classList.remove('speaking');
+    btn.textContent = '🔊';
+    currentUtterance = null;
+  };
+
+  currentUtterance = utterance;
+  speechSynthesis.speak(utterance);
+}
+
+function autoSpeakText(text) {
+  if (!autoSpeak || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ru-RU';
+  utterance.rate = 0.95;
+  if (selectedVoice) utterance.voice = selectedVoice;
+  speechSynthesis.speak(utterance);
+}
+
+function toggleAutoSpeak() {
+  autoSpeak = !autoSpeak;
+  const btn = document.getElementById('autospeak-btn');
+  btn.textContent = autoSpeak ? 'авто-речь ВКЛ' : 'авто-речь ВЫКЛ';
+  btn.classList.toggle('on', autoSpeak);
+}
+
+function updateVoice() {
+  const select = document.getElementById('voice-select');
+  const voices = speechSynthesis.getVoices().filter(v =>
+    v.lang.startsWith('ru') || v.lang.startsWith('uk')
+  );
+  const useVoices = voices.length > 0 ? voices : speechSynthesis.getVoices().slice(0, 5);
+  selectedVoice = useVoices[parseInt(select.value)] || null;
+}
+
+// START
+init();
+initVoice();
+</script>
+</body>
+</html>
