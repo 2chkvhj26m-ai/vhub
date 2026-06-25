@@ -428,7 +428,7 @@ async function generateRunwayVideo() {
 
   try {
     // Step 1: Create generation task
-    const createResp = await fetch(`${RUNWAY_PROXY}/v1/image_to_video`, {
+    const createResp = await fetch(`${RUNWAY_PROXY}/v1/text_to_video`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
