@@ -296,7 +296,6 @@
 // CONFIG
 // ================================================
 const RUNWAY_PROXY = 'https://runway-proxy.vshmidt73.workers.dev';
-const RUNWAY_API_KEY = 'key_72bafff622641aefab95f44125c72d7e56242990489b47d9a2fb9820e9cd76f5ab17ab1fea30ef697d0f76d16057c12dd72639b7df92bd0a66dd8da8899e0d76';
 
 const DRIVE_CONFIG = {
   credentials: {
@@ -432,7 +431,6 @@ async function generateRunwayVideo() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RUNWAY_API_KEY}`,
         'X-Runway-Version': '2024-11-06'
       },
       body: JSON.stringify({
@@ -460,7 +458,6 @@ async function generateRunwayVideo() {
 
       const pollResp = await fetch(`${RUNWAY_PROXY}/v1/tasks/${taskId}`, {
         headers: {
-          'Authorization': `Bearer ${RUNWAY_API_KEY}`,
           'X-Runway-Version': '2024-11-06'
         }
       });
