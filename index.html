@@ -297,108 +297,14 @@
 // ================================================
 const RUNWAY_PROXY = 'https://runway-proxy.vshmidt73.workers.dev';
 
-const DRIVE_CONFIG = {
-  credentials: {
-    type: 'service_account',
-    project_id: 'vhub-499213',
-    private_key_id: 'a4e011c4e0cf15c6b9c4fe9777f48b7652a44a0e',
-    private_key: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7S7ZzLLSr1nU3\nbCj3DAyYyuWxvECLKSFPOrXw8BmVDq8BnTbutAAAxBB8iGReFIgH9OdOBTfUfuAb\n3TEAFhOa8jRZsm3xQsRkkVNt4fXNTUXIp53IED8i+QqSG5P29pve0QAr3eDwVQ2+\nrq3zS/6BOoZi9oD+quPmu881rQTKOqV77J26GsyX/69FOwru/pSppHW1v/nRfkUS\nfOe8U3bPJD14UGHU34RP/dQwgspRbuNZEan/prlEerW2BBx7Dq3s03yRY5xePRtB\nZTxqDgc6jlqPv/wuMQBPSnk2cwpOA/u4VsxZhwsw0U+RJfaUUeS/Yv63emccSIQl\nEIvrTdMtAgMBAAECggEAAeQlErsmFOEcvGNHc50nyGguExIdTbpr1262lRj7jSWB\nj2Dcw+LF6DwSlYtUBh4rdHcc2c0UL/1a+nUMkF1os8UT0b8LPKcpsAFGqCKitoC7\n/mdw4KsHVC1TFcAZCaKaVtDh8U9zfMHDGoSNhZokFv52CmxGR6wGkpcdY8OcO4WB\nJxcorG+2PfxYOX+ZOq4kkVvVu8jkBcsVVZuOqPFxeAvjsbFyF6Af1ppAHqgzG+47\nGmBV1O+HT+Z0uYH65dbn2omUU9rTdFqAlYG6V4F2WIYtsVZDukKd7nK/0ntH3NWe\nxBYIX6X23oBUnGf9DoCK/keKZXA2RMENnL6GWeKIwQKBgQDiVK7aYvqaU+3HSq7z\nhmemFUHK6wy0wbllbV/FhMmQjFNMaCgK3KUA+YZzUufKspbPZZLpIXtU/FeRMjYJ\ngLid7+g/sCgeXucgCtsisW4/4LVbxW1IaojTVBcDPtzgwUaRU/+ZM+YyQbv0zElX\nDKVDxSGpby5tOq8/X02qOnIDwQKBgQDT2RK4X/iSUosabVFMZXKRinYq4/23f7jU\n7sEnDW2xdaU7HRAlz9C5BcXrlpdRMjND+ebuBlwKE2vrXxJLJDE8mEQrZnGg8Csp\nV36mcgClaOzuV9TBrnCvU1VmNdSBg6fPR+NaV7EWpniiupJcm6fLgN3wzjPpQnpG\nfrh/FAi6bQKBgFPu86kpa6Yv2c4+dAL7pRSCbZPC90NRVF+43/tv8xAX+gwr1C2z\nBb4Gy0WZSTxyXlsrX//02rf5nL/Lzx5XDiAECC0WNsqMh0nqvLlw82HdA2S1IoHo\ngDVeyen6Ng9jnbfnXrKB/KxGlF2EJO6TUfZ/9KvQ/3aifLsTrMmkQwQBAoGBAJPi\nI5xLemUCdBJFn4v6AWkxw92a/AD9itQxuun9CMbpfidu2Vfb4zNVoV0c6ZKHvZvF\nNnyQOe3asupCmq2TnT9Ud7noMIgNP8QDTOj6ChNt1H9pFp8Bm634OVQ5XZfvhNRA\ntafaMUfDe9D09rjo+9AmrEeuWjSJ8HuHeFlVbeZdAoGAbfNfaAb6lYiacZCp+EVS\nEFcZu/0Fxe97SY/5WLWRiORi0UxTuh2mhj0YQyJHw/m5UN4d68opSZ2iV+UtxQ6w\nlKL5NFA0DYlRBAl5Vz3wY6RK+xIfMj9NqRUtPQMgeK9eZtdkFp5dFAk+wXYwiYsg\n3PIwKPG/etP80UJdkb+9lrA=\n-----END PRIVATE KEY-----\n',
-    client_email: 'vhub-drive@vhub-499213.iam.gserviceaccount.com',
-    client_id: '115078966777942600631',
-    token_uri: 'https://oauth2.googleapis.com/token'
-  },
-  folders: {
-    finance:    { id: '15dQnOKOPi03CZu-RpiiQ8V1cIS0FKhPE', label: '📂 1C-exports (Торнадо)' },
-    supervisor: { id: '15dQnOKOPi03CZu-RpiiQ8V1cIS0FKhPE', label: '📂 1C-exports (Торнадо)' },
-    auto:       { id: '1lGhCTbFH661T1edPVhKKhd4LzLcb1Lbm', label: '📂 STO-reports (Автомаксимум)' },
-    coo:        { id: '15dQnOKOPi03CZu-RpiiQ8V1cIS0FKhPE', label: '📂 1C-exports (Торнадо)' },
-  }
-};
-
-// ================================================
-// DRIVE
-// ================================================
-let driveToken = null, driveTokenExpiry = 0, driveDataCache = {};
-
-async function getDriveToken() {
-  if (driveToken && Date.now() < driveTokenExpiry - 60000) return driveToken;
-  const creds = DRIVE_CONFIG.credentials;
-  const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({alg:'RS256',typ:'JWT'})).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const claim = btoa(JSON.stringify({iss:creds.client_email,scope:'https://www.googleapis.com/auth/drive.readonly',aud:creds.token_uri,exp:now+3600,iat:now})).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const sigInput = header + '.' + claim;
-  const pemKey = creds.private_key.replace('-----BEGIN PRIVATE KEY-----','').replace('-----END PRIVATE KEY-----','').replace(/\n/g,'');
-  const binaryKey = Uint8Array.from(atob(pemKey), c => c.charCodeAt(0));
-  const cryptoKey = await crypto.subtle.importKey('pkcs8', binaryKey.buffer, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['sign']);
-  const sigBytes = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, new TextEncoder().encode(sigInput));
-  const sig = btoa(String.fromCharCode(...new Uint8Array(sigBytes))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const jwt = sigInput + '.' + sig;
-  const resp = await fetch('https://oauth2.googleapis.com/token', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`});
-  const data = await resp.json();
-  if (!data.access_token) throw new Error(data.error_description || 'Token error');
-  driveToken = data.access_token;
-  driveTokenExpiry = Date.now() + (data.expires_in || 3600) * 1000;
-  return driveToken;
-}
-
+// Drive credentials must live on a trusted server, never in a public page.
+// Loading is disabled until a server-side endpoint is connected.
 async function loadDriveData() {
-  if (!currentAgent) return;
-  const folder = DRIVE_CONFIG.folders[currentAgent.id];
-  if (!folder) return;
-  const btn = document.getElementById('drive-load-btn');
-  const status = document.getElementById('drive-status');
-  btn.disabled = true; btn.textContent = '⏳ Загрузка...';
-  try {
-    const token = await getDriveToken();
-    const url = `https://www.googleapis.com/drive/v3/files?q='${folder.id}'+in+parents+and+trashed=false&orderBy=modifiedTime+desc&fields=files(id,name,mimeType)&pageSize=10`;
-    const resp = await fetch(url, {headers:{Authorization:'Bearer '+token}});
-    const data = await resp.json();
-    const files = data.files || [];
-    if (!files.length) { status.textContent = 'Папка пуста'; btn.disabled = false; btn.textContent = '↓ Загрузить данные'; return; }
-    let combined = '', names = [];
-    for (const file of files) {
-      try {
-        const isSheet = file.mimeType === 'application/vnd.google-apps.spreadsheet';
-        const fileUrl = isSheet
-          ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/csv`
-          : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
-        const fr = await fetch(fileUrl, {headers:{Authorization:'Bearer '+token}});
-        const text = await fr.text();
-        combined += `\n\n=== ${file.name} ===\n${text.substring(0, 3000)}`;
-        names.push(file.name);
-      } catch(e) { names.push(file.name + ' ⚠'); }
-    }
-    driveDataCache[currentAgent.id] = {text: combined, filename: names.join(', '), loaded: new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'})};
-    const container = document.getElementById('messages');
-    const div = document.createElement('div');
-    div.className = 'msg drive-msg';
-    div.innerHTML = `📂 <b>Загружено: ${names.length} файлов</b><br>${names.join(' · ')}<br><span style="color:var(--green)">Данные доступны агенту.</span>`;
-    container.appendChild(div); container.scrollTop = container.scrollHeight;
-    btn.textContent = '✓ Обновить';
-    status.textContent = `${names.length} файлов`;
-  } catch(e) {
-    status.textContent = '⚠ ' + e.message;
-    btn.textContent = '↓ Попробовать снова';
-  }
-  btn.disabled = false;
+  document.getElementById('drive-status').textContent = 'Требуется серверное подключение Drive.';
 }
-
-function getDriveContext() {
-  if (!currentAgent) return '';
-  const cache = driveDataCache[currentAgent.id];
-  if (!cache) return '';
-  return `\n\n---\nДАННЫЕ ИЗ GOOGLE DRIVE (${cache.filename}, ${cache.loaded}):\n${cache.text.substring(0,6000)}\n---`;
-}
-
+function getDriveContext() { return ''; }
 function updateDriveBar() {
-  const bar = document.getElementById('drive-bar');
-  if (!currentAgent || !DRIVE_CONFIG.folders[currentAgent.id]) { bar.classList.remove('visible'); return; }
-  bar.classList.add('visible');
-  document.getElementById('drive-bar-label').textContent = DRIVE_CONFIG.folders[currentAgent.id].label;
-  const cache = driveDataCache[currentAgent.id];
-  document.getElementById('drive-status').textContent = cache ? cache.filename + ' · ' + cache.loaded : 'Не загружено';
-  document.getElementById('drive-load-btn').textContent = cache ? '↓ Обновить' : '↓ Загрузить данные';
-  document.getElementById('drive-load-btn').disabled = false;
+  document.getElementById('drive-bar').classList.remove('visible');
 }
 
 // ================================================
@@ -643,7 +549,7 @@ function resetKey() {
 function buildSidebar() {
   const sb = document.getElementById('sidebar');
   sb.innerHTML = AGENTS.map(a => {
-    const hasDrive = !!DRIVE_CONFIG.folders[a.id];
+    const hasDrive = false;
     const fn = councilMode ? 'toggleCouncilAgent' : 'selectAgent';
     return `<button class="agent-btn${hasDrive?' has-drive':''}" id="btn-${a.id}" onclick="${fn}('${a.id}')">
       <div class="agent-check">✓</div>
@@ -913,7 +819,7 @@ function clearChat() {
   if (!currentAgent) return;
   if (confirm('Очистить историю чата с '+currentAgent.name+'?')) {
     conversations[currentAgent.id]=[]; saveConversations(); renderMessages(); renderQuickPrompts();
-    driveDataCache[currentAgent.id]=null; updateDriveBar();
+    updateDriveBar();
   }
 }
 function attachFile(e) { const f=e.target.files[0]; if(!f) return; attachedFiles.push(f); renderFileBar(); e.target.value=''; }
